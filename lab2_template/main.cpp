@@ -53,6 +53,8 @@ cDirectionalLight *light;
 
 // a virtual object
 cMultiMesh* object;
+cMultiMesh* rabbit;
+cMultiMesh* crocodile;
 
 // a haptic device handler
 cHapticDeviceHandler* handler;
@@ -400,6 +402,9 @@ int main(int argc, char* argv[])
 
     // create a virtual mesh
     object = new cMultiMesh();
+    crocodile= new cMultiMesh();
+    rabbit = new cMultiMesh();
+
 
     //cMesh* object = new cMesh();
        // add object to world
@@ -411,16 +416,20 @@ int main(int argc, char* argv[])
 
 
     // create a mesh
-    cMesh* texturePlane = new cMesh();
+    //cMesh* object = new cMesh();
 
     // create plane
-   // cCreatePlane(texturePlane, 0.3, 0.3);
+   //cCreatePlane(object, 0.3, 0.3);
 
 
     // load an object file
     bool fileload;
     string objectName="elephant.obj";
     fileload = object->loadFromFile(objectName);
+    rabbit->loadFromFile("rabbit.obj");
+
+    rabbit->setLocalPos(0.0,0.2,0.0);
+    //crocodile->loadFromFile("crocodile.obj");
     if (!fileload)
     {
         #if defined(_MSVC)
@@ -437,12 +446,12 @@ int main(int argc, char* argv[])
 
     // create a texture
     bool fileload1;
-    texturePlane->m_texture = cTexture2d::create();
-    fileload1 = texturePlane->m_texture->loadFromFile("crocodile_texure_1.jpg");
+    object->m_texture = cTexture2d::create();
+    fileload1 = object->m_texture->loadFromFile("crocodile_texure_1.jpg");
         if (!fileload1)
         {
             #if defined(_MSVC)
-            fileload = texturePlane->m_texture->loadFromFile("crocodile_texure_1.jpg");
+            fileload = object->m_texture->loadFromFile("crocodile_texure_1.jpg");
             #endif
         }
         if (!fileload1)
@@ -456,13 +465,13 @@ int main(int argc, char* argv[])
     //object->setTexture(textureSpace);
 
         // enable texture mapping
-        texturePlane->setUseTexture(true);
-        texturePlane->m_material->setWhite();
+        object->setUseTexture(true);
+        object->m_material->setWhite();
 
         // create normal map from texture data
         cNormalMapPtr normalMap0 = cNormalMap::create();
-        normalMap0->createMap(texturePlane->m_texture);
-        texturePlane->m_normalMap = normalMap0;
+        normalMap0->createMap(object->m_texture);
+        object->m_normalMap = normalMap0;
 
 
 
@@ -483,16 +492,16 @@ int main(int argc, char* argv[])
 
     cMaterial m;
     m.setBlueCadet();
-    texturePlane->setMaterial(m);
+    object->setMaterial(m);
     // set haptic properties
-    texturePlane->m_material->setStiffness(0.8 * maxStiffness);
-    texturePlane->m_material->setStaticFriction(0.3);
-    texturePlane->m_material->setDynamicFriction(0.2);
-    texturePlane->m_material->setTextureLevel(1.0);
-    texturePlane->m_material->setHapticTriangleSides(true, false);
+    object->m_material->setStiffness(0.8 * maxStiffness);
+    object->m_material->setStaticFriction(0.3);
+    object->m_material->setDynamicFriction(0.2);
+    object->m_material->setTextureLevel(1.0);
+    object->m_material->setHapticTriangleSides(true, false);
 
     // disable culling so that faces are rendered on both sides
-    //texturePlane->setUseCulling(false);
+    //object->setUseCulling(false);
 
     // compute a boundary box
     object->computeBoundaryBox(true);
@@ -502,10 +511,12 @@ int main(int argc, char* argv[])
 
     // compute collision detection algorithm
     // create collision detector
-    texturePlane->createAABBCollisionDetector(toolRadius);
+    object->createAABBCollisionDetector(toolRadius);
+    rabbit->createAABBCollisionDetector(toolRadius);
 
     // add object to world
-    world->addChild(texturePlane);
+    world->addChild(object);
+    world->addChild(rabbit);
 
 
 
@@ -919,6 +930,10 @@ void updateHaptics(void)
             //gravity
             //if (tool->m_hapticPoint->getNumCollisionEvents() > 0)
                 tool->setDeviceGlobalForce(0.0, 0.0, -5.0);
+                if(selectedObject==object)
+                    tool->setDeviceGlobalForce(0.0, 0.0, -10.0);
+                if(selectedObject==rabbit)
+                    tool->setDeviceGlobalForce(0.0, 0.0, -5.0);
 
             tool->initialize();
         }
