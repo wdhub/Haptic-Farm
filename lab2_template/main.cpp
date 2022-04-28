@@ -411,7 +411,7 @@ int main(int argc, char* argv[])
 
 
     // create a mesh
-  //  object = new cMesh();
+    cMesh* texturePlane = new cMesh();
 
     // create plane
    // cCreatePlane(texturePlane, 0.3, 0.3);
