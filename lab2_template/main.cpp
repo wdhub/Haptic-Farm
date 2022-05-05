@@ -118,13 +118,40 @@ bool space_button{false};
 
 //timing
 cPrecisionClock clockTotal;
+//choice of animal
+size_t assignmentId=0;
 
 
 
 class Animal{
     public:
         cMultiMesh* model;
+        cVector3d gravity;
+        cVector3d movement;
+        string objectName;
+        double stiffness=0.8;
+        double friction=0.2;
+
     Animal(string objectName){
+        this->objectName=objectName;
+        //initialize haptic qualities according to animal, except movement which change with time
+
+        if(objectName=="elephant.obj"){
+            this->gravity=cVector3d(0.0, 0.0, -10.0);
+            this->stiffness=0.5;
+            this->friction=0.2;
+        }
+        else if(objectName=="rabbit.obj"){
+            this->gravity=cVector3d(0.0, 0.0, -5.0);
+            this->stiffness=0.2;
+            this->friction=0.5;
+        }
+        else if(objectName=="crocodile.obj"){
+            this->gravity=cVector3d(0.0, 0.0, -8.0);
+            this->stiffness=0.8;
+            this->friction=0.5;
+        }
+
         cout << "loading: "<<objectName << endl;
         // create a virtual mesh
         cMultiMesh* animal = new cMultiMesh();
@@ -147,6 +174,20 @@ class Animal{
         if(fileload)
             cout << "successfully load: "<<objectName << endl;
         this->model=animal;
+    }
+    void setMovement(){
+        //movement forces
+        double t = clockTotal.getCurrentTimeSeconds();
+        //movement
+        if(this->objectName=="elephant.obj"){
+            this->movement=cVector3d(0,3*cSinRad(5*t),0);
+        }
+        else if(this->objectName=="rabbit.obj"){
+            this->movement=cVector3d(0,0,5*cSinRad(40*cSinRad(t)));
+        }
+        else if(this->objectName=="crocodile.obj"){
+            this->movement=cVector3d(0,-5+5*cSinRad(10*t),0);
+        }
     }
 };
 
@@ -186,10 +227,10 @@ void updateHaptics(void);
 void close(void);
 
 // Reset the scene with a new scene according to 'assignmentId'
-void reset(size_t assignmentId);
+void reset();
 
 //initialize haptic qualities
-cMultiMesh* initializeObj(cMultiMesh* object);
+cMultiMesh* initializeObj(cMultiMesh* object,double stiffness, double friction);
 //==============================================================================
 /*
     DEMO:   21-object.cpp
@@ -438,10 +479,8 @@ int main(int argc, char* argv[])
 
 
     //default by elephant
-    //Animal myAnimals[3]={Animal("elephant.obj"),Animal("rabbit.obj"),Animal("crocodile.obj")};
-
-    cout << "successfully create animals: "<< endl;
     object=myAnimals[0].model;
+    object=initializeObj(object,myAnimals[0].stiffness,myAnimals[0].friction);
 
     //object = new cMultiMesh();
 
@@ -508,7 +547,6 @@ int main(int argc, char* argv[])
     }
 */
 
-    object=initializeObj(object);
 
 
     //--------------------------------------------------------------------------
@@ -687,42 +725,50 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
 
     else if (a_key == GLFW_KEY_0)
     {
-        reset(0);
+        assignmentId=0;
+        reset();
     }
     else if (a_key == GLFW_KEY_1)
     {
-        reset(1);
+        assignmentId=1;
+        reset();
     }
     else if (a_key == GLFW_KEY_2)
     {
-        reset(2);
+        assignmentId=2;
+        reset();
     }
     else if (a_key == GLFW_KEY_3)
     {
-        reset(3);
+        assignmentId=3;
+        reset();
     }
     else if (a_key == GLFW_KEY_4)
     {
-        reset(4);
+        assignmentId=4;
+        reset();
     }
     else if (a_key == GLFW_KEY_5)
     {
-        reset(5);
+        assignmentId=5;
+        reset();
     }
 
 }
-void reset(size_t assignmentId)
+void reset()
 {
     cout << "key pressed: " << assignmentId << endl;
     world->deleteChild(object);
-    object=myAnimals[assignmentId].model;
-    object=initializeObj(object);
+    Animal ani=myAnimals[assignmentId];
+    cout<<"model: "<<ani.model<<" friction : "<<ani.friction<<endl;
+    object=ani.model;
+    object=initializeObj(object,ani.stiffness,ani.friction);
     world->addChild(object);
 
 }
 
 //
-cMultiMesh* initializeObj(cMultiMesh* object){
+cMultiMesh* initializeObj(cMultiMesh* localObject,double stiffness, double friction){
     // retrieve information about the current haptic device
     cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();
     // read the scale factor between the physical workspace of the haptic
@@ -733,68 +779,63 @@ cMultiMesh* initializeObj(cMultiMesh* object){
     double maxStiffness	= hapticDeviceInfo.m_maxLinearStiffness / workspaceScaleFactor;
     cMaterial m;
     m.setBlueCadet();
-    object->setMaterial(m);
+    localObject->setMaterial(m);
     // set haptic properties
-    object->m_material->setStiffness(0.8 * maxStiffness);
-    object->m_material->setStaticFriction(0.3);
-    object->m_material->setDynamicFriction(0.2);
-    object->m_material->setTextureLevel(1.0);
-    object->m_material->setHapticTriangleSides(true, false);
+    localObject->m_material->setStiffness(stiffness * maxStiffness);
+    localObject->m_material->setStaticFriction(friction+0.1);
+    localObject->m_material->setDynamicFriction(friction);
+    localObject->m_material->setTextureLevel(1.0);
+    localObject->m_material->setHapticTriangleSides(true, false);
 
 
     // disable culling so that faces are rendered on both sides
-    //object->setUseCulling(false);
+    //localObject->setUseCulling(false);
 
     // compute a boundary box
-    object->computeBoundaryBox(true);
+    localObject->computeBoundaryBox(true);
 
     // show/hide boundary box
-    object->setShowBoundaryBox(false);
+    localObject->setShowBoundaryBox(false);
 
     // compute collision detection algorithm
     // create collision detector
     double toolRadius = 0.01;
-    object->createAABBCollisionDetector(toolRadius);
-
-    // add object to world
-    world->addChild(object);
-
-
+    localObject->createAABBCollisionDetector(toolRadius);
 
 
     // define a default stiffness for the object
-    object->setStiffness(0.2 * maxStiffness, true);
+    localObject->setStiffness(stiffness * maxStiffness, true);
 
     // define some haptic friction properties
-    object->setFriction(0.1, 0.2, true);
+    localObject->setFriction(friction, friction+0.1, true);
 
     // enable display list for faster graphic rendering
-    object->setUseDisplayList(true);
+    localObject->setUseDisplayList(true);
 
     // center object in scene
-    object->setLocalPos(-1.0 * object->getBoundaryCenter());
+    localObject->setLocalPos(-1.0 * localObject->getBoundaryCenter());
 
     // rotate object in scene
-    //object->rotateExtrinsicEulerAnglesDeg(0, 0, 90, C_EULER_ORDER_XYZ);
+    //localObject->rotateExtrinsicEulerAnglesDeg(0, 0, 90, C_EULER_ORDER_XYZ);
 
 
     // compute all edges of object for which adjacent triangles have more than 40 degree angle
-    object->computeAllEdges(0);
+    localObject->computeAllEdges(0);
     // set line width of edges and color
     cColorf colorEdges;
     colorEdges.setBlack();
-    object->setEdgeProperties(1, colorEdges);
+    localObject->setEdgeProperties(1, colorEdges);
 
     // set normal properties for display
     cColorf colorNormals;
     colorNormals.setOrangeTomato();
-    object->setNormalsProperties(0.01, colorNormals);
+    localObject->setNormalsProperties(0.01, colorNormals);
     // display options
-    object->setShowTriangles(showTriangles);
-    object->setShowEdges(showEdges);
-    object->setShowNormals(showNormals);
+    localObject->setShowTriangles(showTriangles);
+    localObject->setShowEdges(showEdges);
+    localObject->setShowNormals(showNormals);
 
-    return object;
+    return localObject;
 }
 
 
@@ -955,21 +996,11 @@ void updateHaptics(void)
             // assign new local transformation to object
             selectedObject->setLocalTransform(parent_T_object);
 
-            //gravity
-            cVector3d gvtRabbit=cVector3d(0.0, 0.0, -5.0);
-            cVector3d gvtElephant=cVector3d(0.0, 0.0, -10.0);
-            cVector3d gvtCrocodile=cVector3d(0.0, 0.0, -10.0);
-
-            //movement forces
-            double t = clockTotal.getCurrentTimeSeconds();
-            cout << "TIME: " <<t<<endl;
-            cVector3d movRabbit=cVector3d(0,0,5*cSinRad(40*cSinRad(t)));
-            cVector3d movElephant=cVector3d(0,3*cSinRad(5*t),0);
-            cVector3d movCrocodile=cVector3d(0,-5+5*cSinRad(10*t),0);
 
 
-
-            tool->setDeviceGlobalForce(movCrocodile);
+            myAnimals[assignmentId].setMovement();
+            cVector3d forces=myAnimals[assignmentId].movement+myAnimals[assignmentId].gravity;
+            tool->setDeviceGlobalForce(forces);
 
 
 
