@@ -1,25 +1,25 @@
 //===========================================================================
 /*
 
-	CS277 - Experimental Haptics
-	Winter 2010, Stanford University
+    CS277 - Experimental Haptics
+    Winter 2010, Stanford University
 
 
-	You may use this program as a boilerplate for starting your homework
-	assignments.  Use CMake (www.cmake.org) on the CMakeLists.txt file to
-	generate project files for the development tool of your choice.  The
-	CHAI3D library directory (chai3d-2.1.0) should be installed as a sibling
-	directory to the one containing this project.
+    You may use this program as a boilerplate for starting your homework
+    assignments.  Use CMake (www.cmake.org) on the CMakeLists.txt file to
+    generate project files for the development tool of your choice.  The
+    CHAI3D library directory (chai3d-2.1.0) should be installed as a sibling
+    directory to the one containing this project.
 
 
-	These files are meant to be helpful should you encounter difficulties
-	setting up a working CHAI3D project.  However, you are not required to
-	use them for your homework -- you may start from anywhere you'd like.
+    These files are meant to be helpful should you encounter difficulties
+    setting up a working CHAI3D project.  However, you are not required to
+    use them for your homework -- you may start from anywhere you'd like.
 
 
-	\author    Francois Conti & Sonny Chan
-	\date      January 2010
-	*/
+    \author    Francois Conti & Sonny Chan
+    \date      January 2010
+    */
 //===========================================================================
 
 //---------------------------------------------------------------------------
@@ -201,19 +201,19 @@ void reset(size_t assignmentId);
 //===========================================================================
 
 /*
-	This application illustrates the use of the haptic device handler
-	"cHapticDevicehandler" to access haptic devices connected to the computer.
+    This application illustrates the use of the haptic device handler
+    "cHapticDevicehandler" to access haptic devices connected to the computer.
 
 
-	In this example the application opens an OpenGL window and displays a
-	3D cursor for the first device found. If the operator presses the device
-	user button, the color of the cursor changes accordingly.
+    In this example the application opens an OpenGL window and displays a
+    3D cursor for the first device found. If the operator presses the device
+    user button, the color of the cursor changes accordingly.
 
-	In the main haptics loop function  "updateHaptics()" , the position and
-	user switch status of the device are retrieved at each simulation iteration.
-	This information is then used to update the position and color of the
-	cursor. A force is then commanded to the haptic device to attract the
-	end-effector towards the device origin.
+    In the main haptics loop function  "updateHaptics()" , the position and
+    user switch status of the device are retrieved at each simulation iteration.
+    This information is then used to update the position and color of the
+    cursor. A force is then commanded to the haptic device to attract the
+    end-effector towards the device origin.
 */
 //===========================================================================
 
@@ -222,30 +222,30 @@ void reset(size_t assignmentId);
 int main(int argc, char* argv[])
 {
 
-	//-----------------------------------------------------------------------
-	// INITIALIZATION
-	//-----------------------------------------------------------------------
-	std::cout << std::endl;
-	std::cout << "Based on:" << std::endl;
-	std::cout << "-----------------------------------" << std::endl;
-	std::cout << "CS277 - Experimental Haptics" << std::endl;
-	std::cout << "Homework Boilerplate Application" << std::endl;
-	std::cout << "January 2010, Stanford University" << std::endl;
+    //-----------------------------------------------------------------------
+    // INITIALIZATION
+    //-----------------------------------------------------------------------
+    std::cout << std::endl;
+    std::cout << "Based on:" << std::endl;
+    std::cout << "-----------------------------------" << std::endl;
+    std::cout << "CS277 - Experimental Haptics" << std::endl;
+    std::cout << "Homework Boilerplate Application" << std::endl;
+    std::cout << "January 2010, Stanford University" << std::endl;
     std::cout << "and 01-mydevice.cpp from Chai 3.2" << std::endl;
     std::cout << "-----------------------------------" << std::endl;
-	std::cout << std::endl << std::endl;
+    std::cout << std::endl << std::endl;
 
-	//-----------------------------------------------------------------------
-	// ASSIGNMENTS
-	//-----------------------------------------------------------------------
+    //-----------------------------------------------------------------------
+    // ASSIGNMENTS
+    //-----------------------------------------------------------------------
 
-	// Load the available assignment scenes
-	assignments.push_back(new HelloWorld());
-	assignments.push_back(new ReadDevicePosition());
-	assignments.push_back(new BasicForceEffects());
-	assignments.push_back(new HapticWall());
-	assignments.push_back(new MagneticEffect());
-	assignments.push_back(new HapticSphere());
+    // Load the available assignment scenes
+    assignments.push_back(new HelloWorld());
+    assignments.push_back(new ReadDevicePosition());
+    assignments.push_back(new BasicForceEffects());
+    assignments.push_back(new HapticWall());
+    assignments.push_back(new MagneticEffect());
+    assignments.push_back(new HapticSphere());
 
 
 
@@ -324,9 +324,9 @@ int main(int argc, char* argv[])
     }
 #endif
 
-	//-----------------------------------------------------------------------
-	// HAPTIC DEVICES / TOOLS
-	//-----------------------------------------------------------------------
+    //-----------------------------------------------------------------------
+    // HAPTIC DEVICES / TOOLS
+    //-----------------------------------------------------------------------
 
     // Create a haptic device handler
     handler = new cHapticDeviceHandler();
@@ -418,13 +418,13 @@ int main(int argc, char* argv[])
 
 
     //-----------------------------------------------------------------------
-	// START SIMULATION
-	//-----------------------------------------------------------------------
-	// Initialize the world with assignment 0
-	reset(0);
+    // START SIMULATION
+    //-----------------------------------------------------------------------
+    // Initialize the world with assignment 0
+    reset(0);
 
-	// Simulation in now running
-	simulationRunning = true;
+    // Simulation in now running
+    simulationRunning = true;
 
     // Create a thread which starts the main haptics rendering loop
     hapticsThread = new cThread();
@@ -474,37 +474,37 @@ int main(int argc, char* argv[])
 
 void reset(size_t assignmentId)
 {
-	// Deactivate the old scene
-	assignments[currentAssignment]->setInitialized(false);
-	currentAssignment = assignmentId;
+    // Deactivate the old scene
+    assignments[currentAssignment]->setInitialized(false);
+    currentAssignment = assignmentId;
 
-	// Delete the old world and create a new one
+    // Delete the old world and create a new one
     delete world;
-	world = new cWorld();
-	world->setBackgroundColor(0.0, 0.0, 0.0);
+    world = new cWorld();
+    world->setBackgroundColor(0.0, 0.0, 0.0);
 
-	// Create a camera and insert it into the virtual world
-	camera = new cCamera(world);
-	world->addChild(camera);
+    // Create a camera and insert it into the virtual world
+    camera = new cCamera(world);
+    world->addChild(camera);
 
-	// Position and oriente the camera
-	camera->set(cVector3d(0.2, 0.0, 0.0),    // camera position (eye)
+    // Position and oriente the camera
+    camera->set(cVector3d(0.2, 0.0, 0.0),    // camera position (eye)
                 cVector3d(0.0, 0.0, 0.0),    // lookat position (target)
                 cVector3d(0.0, 0.0, 1.0));   // direction of the "up" vector
 
 
-	// Set the near and far clipping planes of the camera
-	// anything in front/behind these clipping planes will not be rendered
-	camera->setClippingPlanes(0.01, 10.0);
+    // Set the near and far clipping planes of the camera
+    // anything in front/behind these clipping planes will not be rendered
+    camera->setClippingPlanes(0.01, 10.0);
 
-	// Create a light source and attach it to the camera
+    // Create a light source and attach it to the camera
     light = new cDirectionalLight(world);
-	camera->addChild(light);                   // attach light to camera
-	light->setEnabled(true);                   // enable light source
+    camera->addChild(light);                   // attach light to camera
+    light->setEnabled(true);                   // enable light source
     light->setLocalPos(cVector3d(2.0, 0.5, 1.0));  // position the light source
-	light->setDir(cVector3d(-2.0, 0.5, 1.0));  // define the direction of the light beam
+    light->setDir(cVector3d(-2.0, 0.5, 1.0));  // define the direction of the light beam
 
-	// Create a label that shows the haptic loop update rate
+    // Create a label that shows the haptic loop update rate
     cFontPtr font = NEW_CFONTCALIBRI20();
     rateLabel = new cLabel(font);
     camera->m_frontLayer->addChild(rateLabel);
@@ -518,19 +518,19 @@ void reset(size_t assignmentId)
     assignmentLabel = new cLabel(font);
     camera->m_frontLayer->addChild(assignmentLabel);
 
-	// Initialize the current assignment
+    // Initialize the current assignment
     assignments[currentAssignment]->initialize(world, camera);
 
-	// Update the assignment label
+    // Update the assignment label
     assignmentLabel->setText(assignments[currentAssignment]->getName());
 
-	// Precalculate width to make it centered
+    // Precalculate width to make it centered
     assignmentLabelWidth = assignmentLabel->m_font->getTextWidth(assignmentLabel->getText(),0.01);
     assignments[currentAssignment]->setInitialized(true);
 
 
-	// Restart the clock measuring total time elapsed
-	clockTotal.start(true);
+    // Restart the clock measuring total time elapsed
+    clockTotal.start(true);
 }
 //---------------------------------------------------------------------------
 
@@ -667,7 +667,7 @@ void updateGraphics(void)
 
 
     if (assignments[currentAssignment]->isInitialized()){
-		assignments[currentAssignment]->updateGraphics();
+        assignments[currentAssignment]->updateGraphics();
 
         // update position display (using global variable set in haptic loop)
         //labelHapticDevicePosition->setText(assignments[currentAssignment]->hapticDevicePosition.str(3));
@@ -686,9 +686,9 @@ void updateGraphics(void)
 
 
     /*
-	// Update the label with the haptic refresh rate
-	char buffer[128];
-	sprintf(buffer, "Haptic rate: %.0lf Hz", rateEstimate);
+    // Update the label with the haptic refresh rate
+    char buffer[128];
+    sprintf(buffer, "Haptic rate: %.0lf Hz", rateEstimate);
     rateLabel->setString(buffer);
     rateLabel->setLocalPos(displayW - 120, 8, 0);
 */
@@ -719,43 +719,43 @@ void updateGraphics(void)
 
 void updateHaptics(void)
 {
-	// A clock to estimate the haptic simulation loop update rate
-	cPrecisionClock pclock;
-	pclock.setTimeoutPeriodSeconds(1.0);
-	pclock.start(true);
-	int counter = 0;
-	cPrecisionClock frameClock;
-	frameClock.start(true);
+    // A clock to estimate the haptic simulation loop update rate
+    cPrecisionClock pclock;
+    pclock.setTimeoutPeriodSeconds(1.0);
+    pclock.start(true);
+    int counter = 0;
+    cPrecisionClock frameClock;
+    frameClock.start(true);
 
-	// Main haptic simulation loop
-	while (simulationRunning)
-	{
-		if (!hapticDevice)
-			continue;
+    // Main haptic simulation loop
+    while (simulationRunning)
+    {
+        if (!hapticDevice)
+            continue;
 
-		// Total time elapsed since the current assignment started
-		double totalTime = clockTotal.getCurrentTimeSeconds();
+        // Total time elapsed since the current assignment started
+        double totalTime = clockTotal.getCurrentTimeSeconds();
 
-		// Time elapsed since the previous haptic frame
-		double timeStep = frameClock.getCurrentTimeSeconds();
-		frameClock.start(true);
+        // Time elapsed since the previous haptic frame
+        double timeStep = frameClock.getCurrentTimeSeconds();
+        frameClock.start(true);
 
-		// Update assignment
-		if (assignments[currentAssignment]->isInitialized())
+        // Update assignment
+        if (assignments[currentAssignment]->isInitialized())
             assignments[currentAssignment]->updateHaptics(hapticDevice.get(), timeStep, totalTime);
 
-		// Estimate the refresh rate
-		++counter;
-		if (pclock.timeoutOccurred()) {
-			pclock.stop();
-			rateEstimate = counter;
-			counter = 0;
-			pclock.start(true);
-		}
-	}
+        // Estimate the refresh rate
+        ++counter;
+        if (pclock.timeoutOccurred()) {
+            pclock.stop();
+            rateEstimate = counter;
+            counter = 0;
+            pclock.start(true);
+        }
+    }
 
-	// Exit haptics thread
-	simulationFinished = true;
+    // Exit haptics thread
+    simulationFinished = true;
 }
 
 //---------------------------------------------------------------------------

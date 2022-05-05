@@ -53,6 +53,7 @@ cDirectionalLight *light;
 
 // a virtual object
 cMultiMesh* object;
+cMultiMesh* elephant;
 cMultiMesh* rabbit;
 cMultiMesh* crocodile;
 
@@ -118,10 +119,38 @@ bool space_button{false};
 //timing
 cPrecisionClock clockTotal;
 
-class Rabbit{
-    public: cToolCursor* tool;
+
+
+class Animal{
+    public:
+        cMultiMesh* model;
+    Animal(string objectName){
+        cout << "loading: "<<objectName << endl;
+        // create a virtual mesh
+        cMultiMesh* animal = new cMultiMesh();
+
+
+        // load an object file
+        bool fileload;
+        fileload = animal->loadFromFile(objectName);
+
+        if (!fileload)
+        {
+            #if defined(_MSVC)
+            fileload = animal->loadFromFile(objectName);
+            #endif
+        }
+        if (!fileload)
+        {
+            cout << "Error - 3D Model failed to load correctly" << endl;
+        }
+        if(fileload)
+            cout << "successfully load: "<<objectName << endl;
+        this->model=animal;
+    }
 };
 
+Animal myAnimals[3]={Animal("elephant.obj"),Animal("rabbit.obj"),Animal("crocodile.obj")};
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -156,7 +185,11 @@ void updateHaptics(void);
 // this function closes the application
 void close(void);
 
+// Reset the scene with a new scene according to 'assignmentId'
+void reset(size_t assignmentId);
 
+//initialize haptic qualities
+cMultiMesh* initializeObj(cMultiMesh* object);
 //==============================================================================
 /*
     DEMO:   21-object.cpp
@@ -355,13 +388,12 @@ int main(int argc, char* argv[])
     // get access to the first available haptic device found
     handler->getDevice(hapticDevice, 0);
 
-    // retrieve information about the current haptic device
-    cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();
+
 
     //object
-    Rabbit myRabbit=*new class Rabbit();
+
     // create a tool (cursor) and insert into the world
-    myRabbit.tool = new cToolCursor(world);
+    tool = new cToolCursor(world);
     world->addChild(tool);
 
     // connect the haptic device to the virtual tool
@@ -403,27 +435,21 @@ int main(int argc, char* argv[])
     // CREATE OBJECT
     //--------------------------------------------------------------------------
 
-    // read the scale factor between the physical workspace of the haptic
-    // device and the virtual workspace defined for the tool
-    double workspaceScaleFactor = tool->getWorkspaceScaleFactor();
 
-    // stiffness properties
-    double maxStiffness	= hapticDeviceInfo.m_maxLinearStiffness / workspaceScaleFactor;
 
-    // create a virtual mesh
-    object = new cMultiMesh();
-    crocodile= new cMultiMesh();
-    rabbit = new cMultiMesh();
+    //default by elephant
+    //Animal myAnimals[3]={Animal("elephant.obj"),Animal("rabbit.obj"),Animal("crocodile.obj")};
+
+    cout << "successfully create animals: "<< endl;
+    object=myAnimals[0].model;
+
+    //object = new cMultiMesh();
 
 
     // load an object file
     bool fileload;
-    string objectName="elephant.obj";
-    fileload = object->loadFromFile(objectName);
-    rabbit->loadFromFile("rabbit.obj");
+    fileload = object->loadFromFile("elephant.obj");
 
-    rabbit->setLocalPos(0.0,0.2,0.0);
-    //crocodile->loadFromFile("crocodile.obj");
     if (!fileload)
     {
         #if defined(_MSVC)
@@ -436,8 +462,6 @@ int main(int argc, char* argv[])
         close();
         return (-1);
     }
-
-
     // create a texture
     bool fileload1;
     object->m_texture = cTexture2d::create();
@@ -484,89 +508,7 @@ int main(int argc, char* argv[])
     }
 */
 
-    cMaterial m;
-    m.setBlueCadet();
-    object->setMaterial(m);
-    // set haptic properties
-    object->m_material->setStiffness(0.8 * maxStiffness);
-    object->m_material->setStaticFriction(0.3);
-    object->m_material->setDynamicFriction(0.2);
-    object->m_material->setTextureLevel(1.0);
-    object->m_material->setHapticTriangleSides(true, false);
-
-    rabbit->setMaterial(m);
-    // set haptic properties
-    rabbit->m_material->setStiffness(0.8 * maxStiffness);
-    rabbit->m_material->setStaticFriction(0.3);
-    rabbit->m_material->setDynamicFriction(0.2);
-    rabbit->m_material->setTextureLevel(1.0);
-    rabbit->m_material->setHapticTriangleSides(true, false);
-
-    // disable culling so that faces are rendered on both sides
-    //object->setUseCulling(false);
-
-    // compute a boundary box
-    object->computeBoundaryBox(true);
-    rabbit->computeBoundaryBox(true);
-
-    // show/hide boundary box
-    object->setShowBoundaryBox(false);
-    rabbit->setShowBoundaryBox(false);
-
-    // compute collision detection algorithm
-    // create collision detector
-    object->createAABBCollisionDetector(toolRadius);
-    rabbit->createAABBCollisionDetector(toolRadius);
-
-    // add object to world
-    world->addChild(object);
-    world->addChild(rabbit);
-
-
-
-
-    // define a default stiffness for the object
-    object->setStiffness(0.2 * maxStiffness, true);
-    rabbit->setStiffness(0.2 * maxStiffness, true);
-
-    // define some haptic friction properties
-    object->setFriction(0.1, 0.2, true);
-    rabbit->setFriction(0.1, 0.2, true);
-
-    // enable display list for faster graphic rendering
-    object->setUseDisplayList(true);
-    rabbit->setUseDisplayList(true);
-
-    // center object in scene
-    object->setLocalPos(-1.0 * object->getBoundaryCenter());
-
-    // rotate object in scene
-    //object->rotateExtrinsicEulerAnglesDeg(0, 0, 90, C_EULER_ORDER_XYZ);
-
-
-    // compute all edges of object for which adjacent triangles have more than 40 degree angle
-    object->computeAllEdges(0);
-    rabbit->computeAllEdges(0);
-
-    // set line width of edges and color
-    cColorf colorEdges;
-    colorEdges.setBlack();
-    object->setEdgeProperties(1, colorEdges);
-    rabbit->setEdgeProperties(1, colorEdges);
-
-    // set normal properties for display
-    cColorf colorNormals;
-    colorNormals.setOrangeTomato();
-    object->setNormalsProperties(0.01, colorNormals);
-    rabbit->setNormalsProperties(0.01, colorNormals);
-
-    // display options
-    object->setShowTriangles(showTriangles);
-    object->setShowEdges(showEdges);
-    object->setShowNormals(showNormals);
-    rabbit->setShowTriangles(showTriangles);
-    rabbit->setShowEdges(showEdges);
-    rabbit->setShowNormals(showNormals);
+    object=initializeObj(object);
 
 
     //--------------------------------------------------------------------------
@@ -676,47 +618,6 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
         glfwSetWindowShouldClose(a_window, GLFW_TRUE);
     }
 
-    // option - show/hide texture
-    else if (a_key == GLFW_KEY_1)
-    {
-        bool useTexture = object->getUseTexture();
-        object->setUseTexture(!useTexture);
-    }
-
-    // option - enable/disable wire mode
-    else if (a_key == GLFW_KEY_2)
-    {
-        bool useWireMode = object->getWireMode();
-        object->setWireMode(!useWireMode, true);
-    }
-
-    // option - show/hide collision detection tree
-    else if (a_key == GLFW_KEY_3)
-    {
-        cColorf color = cColorf(1.0, 0.0, 0.0);
-        object->setCollisionDetectorProperties(collisionTreeDisplayLevel, color, true);
-        bool show = object->getShowCollisionDetector();
-        object->setShowCollisionDetector(!show, true);
-    }
-
-    // option - decrease depth level of collision tree
-    else if (a_key == GLFW_KEY_4)
-    {
-        collisionTreeDisplayLevel--;
-        if (collisionTreeDisplayLevel < 0) { collisionTreeDisplayLevel = 0; }
-        cColorf color = cColorf(1.0, 0.0, 0.0);
-        object->setCollisionDetectorProperties(collisionTreeDisplayLevel, color, true);
-        object->setShowCollisionDetector(true, true);
-    }
-
-    // option - increase depth level of collision tree
-    else if (a_key == GLFW_KEY_5)
-    {
-        collisionTreeDisplayLevel++;
-        cColorf color = cColorf(1.0, 0.0, 0.0);
-        object->setCollisionDetectorProperties(collisionTreeDisplayLevel, color, true);
-        object->setShowCollisionDetector(true, true);
-    }
 
     // option - save screenshot to file
     else if (a_key == GLFW_KEY_S)
@@ -783,7 +684,119 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
         mirroredDisplay = !mirroredDisplay;
         camera->setMirrorVertical(mirroredDisplay);
     }
+
+    else if (a_key == GLFW_KEY_0)
+    {
+        reset(0);
+    }
+    else if (a_key == GLFW_KEY_1)
+    {
+        reset(1);
+    }
+    else if (a_key == GLFW_KEY_2)
+    {
+        reset(2);
+    }
+    else if (a_key == GLFW_KEY_3)
+    {
+        reset(3);
+    }
+    else if (a_key == GLFW_KEY_4)
+    {
+        reset(4);
+    }
+    else if (a_key == GLFW_KEY_5)
+    {
+        reset(5);
+    }
+
 }
+void reset(size_t assignmentId)
+{
+    cout << "key pressed: " << assignmentId << endl;
+    world->deleteChild(object);
+    object=myAnimals[assignmentId].model;
+    object=initializeObj(object);
+    world->addChild(object);
+
+}
+
+//
+cMultiMesh* initializeObj(cMultiMesh* object){
+    // retrieve information about the current haptic device
+    cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();
+    // read the scale factor between the physical workspace of the haptic
+    // device and the virtual workspace defined for the tool
+    double workspaceScaleFactor = tool->getWorkspaceScaleFactor();
+
+    // stiffness properties
+    double maxStiffness	= hapticDeviceInfo.m_maxLinearStiffness / workspaceScaleFactor;
+    cMaterial m;
+    m.setBlueCadet();
+    object->setMaterial(m);
+    // set haptic properties
+    object->m_material->setStiffness(0.8 * maxStiffness);
+    object->m_material->setStaticFriction(0.3);
+    object->m_material->setDynamicFriction(0.2);
+    object->m_material->setTextureLevel(1.0);
+    object->m_material->setHapticTriangleSides(true, false);
+
+
+    // disable culling so that faces are rendered on both sides
+    //object->setUseCulling(false);
+
+    // compute a boundary box
+    object->computeBoundaryBox(true);
+
+    // show/hide boundary box
+    object->setShowBoundaryBox(false);
+
+    // compute collision detection algorithm
+    // create collision detector
+    double toolRadius = 0.01;
+    object->createAABBCollisionDetector(toolRadius);
+
+    // add object to world
+    world->addChild(object);
+
+
+
+
+    // define a default stiffness for the object
+    object->setStiffness(0.2 * maxStiffness, true);
+
+    // define some haptic friction properties
+    object->setFriction(0.1, 0.2, true);
+
+    // enable display list for faster graphic rendering
+    object->setUseDisplayList(true);
+
+    // center object in scene
+    object->setLocalPos(-1.0 * object->getBoundaryCenter());
+
+    // rotate object in scene
+    //object->rotateExtrinsicEulerAnglesDeg(0, 0, 90, C_EULER_ORDER_XYZ);
+
+
+    // compute all edges of object for which adjacent triangles have more than 40 degree angle
+    object->computeAllEdges(0);
+    // set line width of edges and color
+    cColorf colorEdges;
+    colorEdges.setBlack();
+    object->setEdgeProperties(1, colorEdges);
+
+    // set normal properties for display
+    cColorf colorNormals;
+    colorNormals.setOrangeTomato();
+    object->setNormalsProperties(0.01, colorNormals);
+    // display options
+    object->setShowTriangles(showTriangles);
+    object->setShowEdges(showEdges);
+    object->setShowNormals(showNormals);
+
+    return object;
+}
+
 
 //------------------------------------------------------------------------------
 
@@ -902,13 +915,10 @@ void updateHaptics(void)
 
                 // get object from contact event
                 selectedObject = collisionEvent->m_object;
-                cout << "Object chosen: " << selectedObject<<endl;
-                cout << "rabbit: " << rabbit<<endl;
-                cout << "Elephant: " << object<<endl;
             }
             //else
             {
-                //selectedObject = object;
+                selectedObject = object;
                 //cout << "selected object set to elephant " <<endl;
 
             }
@@ -949,24 +959,17 @@ void updateHaptics(void)
             cVector3d gvtRabbit=cVector3d(0.0, 0.0, -5.0);
             cVector3d gvtElephant=cVector3d(0.0, 0.0, -10.0);
             cVector3d gvtCrocodile=cVector3d(0.0, 0.0, -10.0);
-/*
+
             //movement forces
             double t = clockTotal.getCurrentTimeSeconds();
-
+            cout << "TIME: " <<t<<endl;
             cVector3d movRabbit=cVector3d(0,0,5*cSinRad(40*cSinRad(t)));
-            cVector3d movElephant=cVector3d(0,1*cSinRad(0.5*t),0);
-            cVector3d movCrocodile=cVector3d(0,-15+0.5*cSinRad(10*t),0);
+            cVector3d movElephant=cVector3d(0,3*cSinRad(5*t),0);
+            cVector3d movCrocodile=cVector3d(0,-5+5*cSinRad(10*t),0);
 
-            cout << "Selected : " << selectedObject << endl;
-            cout << "Elephant : " << object << endl;
-*/
-            //tool->setDeviceGlobalForce(movRabbit);
-            if(selectedObject==rabbit){
-                cout << "Rabbit chosen" << endl;
-                tool->setDeviceGlobalForce(gvtRabbit);
-            }
-            if(selectedObject==object)
-                    tool->setDeviceGlobalForce(gvtElephant);
+
+
+            tool->setDeviceGlobalForce(movCrocodile);
 
 
 
