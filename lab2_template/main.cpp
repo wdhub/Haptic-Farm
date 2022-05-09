@@ -56,6 +56,8 @@ cMultiMesh* object;
 cMultiMesh* elephant;
 cMultiMesh* rabbit;
 cMultiMesh* crocodile;
+cMesh* texturePlane;
+
 
 // a haptic device handler
 cHapticDeviceHandler* handler;
@@ -128,7 +130,7 @@ class Animal{
         cMultiMesh* model;
         cVector3d gravity;
         cVector3d movement;
-        string objectName;
+        string objectName, textureName;
         double stiffness=0.8;
         double friction=0.2;
 
@@ -140,16 +142,19 @@ class Animal{
             this->gravity=cVector3d(0.0, 0.0, -10.0);
             this->stiffness=0.5;
             this->friction=0.2;
+            this->textureName = "../../lab2_template/elephant_texture.jpg";
         }
         else if(objectName=="rabbit.obj"){
             this->gravity=cVector3d(0.0, 0.0, -5.0);
             this->stiffness=0.2;
             this->friction=0.5;
+            this->textureName = "../../lab2_template/rabbit_texture.jpg";
         }
         else if(objectName=="crocodile.obj"){
             this->gravity=cVector3d(0.0, 0.0, -8.0);
             this->stiffness=0.8;
             this->friction=0.5;
+            this->textureName = "../../lab2_template/crocodile_texture.jpg";
         }
 
         cout << "loading: "<<objectName << endl;
@@ -477,6 +482,16 @@ int main(int argc, char* argv[])
     //--------------------------------------------------------------------------
 
 
+    // create a mesh
+    texturePlane = new cMesh();
+    // create plane
+    cCreatePlane(texturePlane, 0.1, 0.1, cVector3d(0.15, 0.12, 0));
+
+    // create collision detector
+    texturePlane->createAABBCollisionDetector(toolRadius);
+    // add object to world
+
+
 
     //default by elephant
     object=myAnimals[0].model;
@@ -486,7 +501,7 @@ int main(int argc, char* argv[])
 
 
     // load an object file
-    bool fileload;
+   /* bool fileload;
     fileload = object->loadFromFile("elephant.obj");
 
     if (!fileload)
@@ -516,7 +531,7 @@ int main(int argc, char* argv[])
             cout << "Error - Texture image failed to load correctly." << endl;
             close();
             return (-1);
-        }
+        }*/
 
     // apply texture to object
     //object->setTexture(textureSpace);
@@ -761,10 +776,50 @@ void reset()
     world->deleteChild(object);
     Animal ani=myAnimals[assignmentId];
     cout<<"model: "<<ani.model<<" friction : "<<ani.friction<<endl;
+    cout<<"model: "<<ani.model<<" friction : "<<ani.textureName<<endl;
     object=ani.model;
     object=initializeObj(object,ani.stiffness,ani.friction);
     world->addChild(object);
 
+    world->addChild(texturePlane);
+
+    bool fileload2;
+    texturePlane->m_texture = cTexture2d::create();
+    fileload2 = texturePlane->m_texture->loadFromFile(RESOURCE_PATH(ani.textureName));
+
+    if (!fileload2)
+    {
+        #if defined(_MSVC)
+        fileload2 = texturePlane->m_texture->loadFromFile(ani.textureName);
+        #endif
+    }
+    if (!fileload2)
+    {
+        cout << "Error - Texture image failed to load correctly." << endl;
+    }
+
+    // enable texture mapping
+    texturePlane->setUseTexture(true);
+    texturePlane->m_material->setWhite();
+    // create normal map from texture data
+    cNormalMapPtr normalMap2 = cNormalMap::create();
+    normalMap2->createMap(texturePlane->m_texture);
+    texturePlane->m_normalMap = normalMap2;
+
+    cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();
+    // read the scale factor between the physical workspace of the haptic
+    // device and the virtual workspace defined for the tool
+    double workspaceScaleFactor = tool->getWorkspaceScaleFactor();
+
+    // stiffness properties
+    double maxStiffness	= hapticDeviceInfo.m_maxLinearStiffness / workspaceScaleFactor;
+
+    // set haptic properties
+    texturePlane->m_material->setStiffness(0.8 * maxStiffness);
+    texturePlane->m_material->setStaticFriction(0.3);
+    texturePlane->m_material->setDynamicFriction(0.2);
+    texturePlane->m_material->setTextureLevel(1.0);
+    texturePlane->m_material->setHapticTriangleSides(true, false);
 }
 
 //
