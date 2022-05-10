@@ -142,19 +142,19 @@ class Animal{
             this->gravity=cVector3d(0.0, 0.0, -10.0);
             this->stiffness=0.5;
             this->friction=0.2;
-            this->textureName = "../../lab2_template/elephant_texture.jpg";
+            this->textureName = "elephant_texture.jpg";
         }
         else if(objectName=="rabbit.obj"){
             this->gravity=cVector3d(0.0, 0.0, -5.0);
-            this->stiffness=0.2;
+            this->stiffness=0.1;
             this->friction=0.5;
-            this->textureName = "../../lab2_template/rabbit_texture.jpg";
+            this->textureName = "rabbit_texture.jpg";
         }
         else if(objectName=="crocodile.obj"){
             this->gravity=cVector3d(0.0, 0.0, -8.0);
             this->stiffness=0.8;
             this->friction=0.5;
-            this->textureName = "../../lab2_template/crocodile_texture.jpg";
+            this->textureName = "crocodile_texture.jpg";
         }
 
         cout << "loading: "<<objectName << endl;
@@ -485,7 +485,7 @@ int main(int argc, char* argv[])
     // create a mesh
     texturePlane = new cMesh();
     // create plane
-    cCreatePlane(texturePlane, 0.1, 0.1, cVector3d(0.15, 0.12, 0));
+    cCreatePlane(texturePlane, 0.1, 0.1, cVector3d(0.1, 0.12, 0));
 
     // create collision detector
     texturePlane->createAABBCollisionDetector(toolRadius);
@@ -497,44 +497,6 @@ int main(int argc, char* argv[])
     object=myAnimals[0].model;
     object=initializeObj(object,myAnimals[0].stiffness,myAnimals[0].friction);
 
-    //object = new cMultiMesh();
-
-
-    // load an object file
-   /* bool fileload;
-    fileload = object->loadFromFile("elephant.obj");
-
-    if (!fileload)
-    {
-        #if defined(_MSVC)
-        fileload = object->loadFromFile(objectName);
-        #endif
-    }
-    if (!fileload)
-    {
-        cout << "Error - 3D Model failed to load correctly" << endl;
-        close();
-        return (-1);
-    }
-    // create a texture
-    bool fileload1;
-    object->m_texture = cTexture2d::create();
-    fileload1 = object->m_texture->loadFromFile("crocodile_texure_1.jpg");
-        if (!fileload1)
-        {
-            #if defined(_MSVC)
-            fileload = object->m_texture->loadFromFile("crocodile_texure_1.jpg");
-            #endif
-        }
-        if (!fileload1)
-        {
-            cout << "Error - Texture image failed to load correctly." << endl;
-            close();
-            return (-1);
-        }*/
-
-    // apply texture to object
-    //object->setTexture(textureSpace);
 
         // enable texture mapping
         object->setUseTexture(true);
@@ -785,7 +747,7 @@ void reset()
 
     bool fileload2;
     texturePlane->m_texture = cTexture2d::create();
-    fileload2 = texturePlane->m_texture->loadFromFile(RESOURCE_PATH(ani.textureName));
+    fileload2 = texturePlane->m_texture->loadFromFile(ani.textureName);
 
     if (!fileload2)
     {
@@ -815,9 +777,9 @@ void reset()
     double maxStiffness	= hapticDeviceInfo.m_maxLinearStiffness / workspaceScaleFactor;
 
     // set haptic properties
-    texturePlane->m_material->setStiffness(0.8 * maxStiffness);
-    texturePlane->m_material->setStaticFriction(0.3);
-    texturePlane->m_material->setDynamicFriction(0.2);
+    texturePlane->m_material->setStiffness(ani.stiffness * maxStiffness);
+    texturePlane->m_material->setStaticFriction(ani.friction+0.1);
+    texturePlane->m_material->setDynamicFriction(ani.friction);
     texturePlane->m_material->setTextureLevel(1.0);
     texturePlane->m_material->setHapticTriangleSides(true, false);
 }
@@ -868,7 +830,7 @@ cMultiMesh* initializeObj(cMultiMesh* localObject,double stiffness, double frict
     localObject->setUseDisplayList(true);
 
     // center object in scene
-    localObject->setLocalPos(-1.0 * localObject->getBoundaryCenter());
+    localObject->setLocalPos(cVector3d(0.0,-0.2,0.0));
 
     // rotate object in scene
     //localObject->rotateExtrinsicEulerAnglesDeg(0, 0, 90, C_EULER_ORDER_XYZ);
