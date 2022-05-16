@@ -128,30 +128,33 @@ size_t assignmentId=0;
 class Animal{
     public:
         cMultiMesh* model;
-        cVector3d gravity;
-        cVector3d movement;
+        cVector3d gravity=cVector3d(0.0,0.0,0.0);
+        cVector3d movement=cVector3d(0.0,0.0,0.0);
         string objectName, textureName;
         double stiffness=0.8;
         double friction=0.2;
+        bool withHaptic=true;
 
-    Animal(string objectName){
+
+    Animal(string objectName,bool withHaptic){
+        this->withHaptic=withHaptic;
         this->objectName=objectName;
         //initialize haptic qualities according to animal, except movement which change with time
 
         if(objectName=="elephant.obj"){
-            this->gravity=cVector3d(0.0, 0.0, -10.0);
+
             this->stiffness=0.5;
             this->friction=0.2;
             this->textureName = "elephant_texture.jpg";
         }
         else if(objectName=="rabbit.obj"){
-            this->gravity=cVector3d(0.0, 0.0, -5.0);
+
             this->stiffness=0.1;
             this->friction=0.5;
             this->textureName = "rabbit_texture.jpg";
         }
         else if(objectName=="crocodile.obj"){
-            this->gravity=cVector3d(0.0, 0.0, -8.0);
+
             this->stiffness=0.8;
             this->friction=0.5;
             this->textureName = "crocodile_texture.jpg";
@@ -183,20 +186,74 @@ class Animal{
     void setMovement(){
         //movement forces
         double t = clockTotal.getCurrentTimeSeconds();
-        //movement
-        if(this->objectName=="elephant.obj"){
-            this->movement=cVector3d(0,3*cSinRad(5*t),0);
+        //movement & gravity
+        if(this->withHaptic){
+            if(this->objectName=="elephant.obj"){
+                this->movement=cVector3d(0,3*cSinRad(5*t),0);
+                this->gravity=cVector3d(0.0, 0.0, -10.0);
+            }
+            else if(this->objectName=="rabbit.obj"){
+                this->movement=cVector3d(0,0,5*cSinRad(40*cSinRad(t)));
+                this->gravity=cVector3d(0.0, 0.0, -5.0);
+            }
+            else if(this->objectName=="crocodile.obj"){
+                this->movement=cVector3d(0,-5+5*cSinRad(10*t),0);
+                this->gravity=cVector3d(0.0, 0.0, -8.0);
+            }
         }
-        else if(this->objectName=="rabbit.obj"){
-            this->movement=cVector3d(0,0,5*cSinRad(40*cSinRad(t)));
+    }
+
+    void initialTexture(){
+        bool fileload2;
+        texturePlane->m_texture = cTexture2d::create();
+
+        string tName="blank.jpg";
+        if(this->withHaptic)
+            tName=this->textureName;
+
+        fileload2 = texturePlane->m_texture->loadFromFile(tName);
+
+        if (!fileload2)
+        {
+            #if defined(_MSVC)
+            fileload2 = texturePlane->m_texture->loadFromFile(tName);
+            #endif
         }
-        else if(this->objectName=="crocodile.obj"){
-            this->movement=cVector3d(0,-5+5*cSinRad(10*t),0);
+        if (!fileload2)
+        {
+            cout << "Error - Texture image failed to load correctly." << endl;
         }
+
+        // enable texture mapping
+        texturePlane->setUseTexture(true);
+        texturePlane->m_material->setWhite();
+        // create normal map from texture data
+        cNormalMapPtr normalMap2 = cNormalMap::create();
+        normalMap2->createMap(texturePlane->m_texture);
+        texturePlane->m_normalMap = normalMap2;
+
+        cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();
+        // read the scale factor between the physical workspace of the haptic
+        // device and the virtual workspace defined for the tool
+        double workspaceScaleFactor = tool->getWorkspaceScaleFactor();
+
+        // stiffness properties
+        double maxStiffness	= hapticDeviceInfo.m_maxLinearStiffness / workspaceScaleFactor;
+
+        // set haptic properties
+        texturePlane->m_material->setStiffness(this->stiffness * maxStiffness);
+        texturePlane->m_material->setStaticFriction(this->friction+0.1);
+        texturePlane->m_material->setDynamicFriction(this->friction);
+        texturePlane->m_material->setTextureLevel(1.0);
+        texturePlane->m_material->setHapticTriangleSides(true, false);
+
+        //location
+        texturePlane->setLocalPos(cVector3d(0.0,-0.1,0.0));
     }
 };
 
-Animal myAnimals[3]={Animal("elephant.obj"),Animal("rabbit.obj"),Animal("crocodile.obj")};
+Animal myAnimals[6]={Animal("elephant.obj",true),Animal("rabbit.obj",true),Animal("crocodile.obj",true),
+                    Animal("elephant.obj",false),Animal("rabbit.obj",false),Animal("crocodile.obj",false)};
 
 //------------------------------------------------------------------------------
 // DECLARED MACROS
@@ -235,7 +292,7 @@ void close(void);
 void reset();
 
 //initialize haptic qualities
-cMultiMesh* initializeObj(cMultiMesh* object,double stiffness, double friction);
+cMultiMesh* initializeObj(cMultiMesh* object,double stiffness, double friction,bool withHaptic);
 //==============================================================================
 /*
     DEMO:   21-object.cpp
@@ -495,7 +552,7 @@ int main(int argc, char* argv[])
 
     //default by elephant
     object=myAnimals[0].model;
-    object=initializeObj(object,myAnimals[0].stiffness,myAnimals[0].friction);
+    object=initializeObj(object,myAnimals[0].stiffness,myAnimals[0].friction,myAnimals[0].withHaptic);
 
 
         // enable texture mapping
@@ -737,55 +794,21 @@ void reset()
     cout << "key pressed: " << assignmentId << endl;
     world->deleteChild(object);
     Animal ani=myAnimals[assignmentId];
+
     cout<<"model: "<<ani.model<<" friction : "<<ani.friction<<endl;
     cout<<"model: "<<ani.model<<" friction : "<<ani.textureName<<endl;
     object=ani.model;
-    object=initializeObj(object,ani.stiffness,ani.friction);
+    object=initializeObj(object,ani.stiffness,ani.friction,ani.withHaptic);
     world->addChild(object);
 
     world->addChild(texturePlane);
+    ani.initialTexture();
 
-    bool fileload2;
-    texturePlane->m_texture = cTexture2d::create();
-    fileload2 = texturePlane->m_texture->loadFromFile(ani.textureName);
-
-    if (!fileload2)
-    {
-        #if defined(_MSVC)
-        fileload2 = texturePlane->m_texture->loadFromFile(ani.textureName);
-        #endif
-    }
-    if (!fileload2)
-    {
-        cout << "Error - Texture image failed to load correctly." << endl;
-    }
-
-    // enable texture mapping
-    texturePlane->setUseTexture(true);
-    texturePlane->m_material->setWhite();
-    // create normal map from texture data
-    cNormalMapPtr normalMap2 = cNormalMap::create();
-    normalMap2->createMap(texturePlane->m_texture);
-    texturePlane->m_normalMap = normalMap2;
-
-    cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();
-    // read the scale factor between the physical workspace of the haptic
-    // device and the virtual workspace defined for the tool
-    double workspaceScaleFactor = tool->getWorkspaceScaleFactor();
-
-    // stiffness properties
-    double maxStiffness	= hapticDeviceInfo.m_maxLinearStiffness / workspaceScaleFactor;
-
-    // set haptic properties
-    texturePlane->m_material->setStiffness(ani.stiffness * maxStiffness);
-    texturePlane->m_material->setStaticFriction(ani.friction+0.1);
-    texturePlane->m_material->setDynamicFriction(ani.friction);
-    texturePlane->m_material->setTextureLevel(1.0);
-    texturePlane->m_material->setHapticTriangleSides(true, false);
 }
 
 //
-cMultiMesh* initializeObj(cMultiMesh* localObject,double stiffness, double friction){
+cMultiMesh* initializeObj(cMultiMesh* localObject,double stiffness, double friction,bool withHaptic){
+    cout<<"with haptic? "<<withHaptic<<endl;
     // retrieve information about the current haptic device
     cHapticDeviceInfo hapticDeviceInfo = hapticDevice->getSpecifications();
     // read the scale factor between the physical workspace of the haptic
@@ -797,44 +820,44 @@ cMultiMesh* initializeObj(cMultiMesh* localObject,double stiffness, double frict
     cMaterial m;
     m.setBlueCadet();
     localObject->setMaterial(m);
-    // set haptic properties
-    localObject->m_material->setStiffness(stiffness * maxStiffness);
-    localObject->m_material->setStaticFriction(friction+0.1);
-    localObject->m_material->setDynamicFriction(friction);
-    localObject->m_material->setTextureLevel(1.0);
-    localObject->m_material->setHapticTriangleSides(true, false);
+
+    if(withHaptic){
+        // set haptic properties
+        localObject->m_material->setStiffness(stiffness * maxStiffness);
+        localObject->m_material->setStaticFriction(friction+0.1);
+        localObject->m_material->setDynamicFriction(friction);
+        localObject->m_material->setTextureLevel(1.0);
+        localObject->m_material->setHapticTriangleSides(true, false);
 
 
-    // disable culling so that faces are rendered on both sides
-    //localObject->setUseCulling(false);
+        // disable culling so that faces are rendered on both sides
+        //localObject->setUseCulling(false);
 
-    // compute a boundary box
-    localObject->computeBoundaryBox(true);
+        // compute a boundary box
+        localObject->computeBoundaryBox(true);
 
-    // show/hide boundary box
-    localObject->setShowBoundaryBox(false);
+        // show/hide boundary box
+        localObject->setShowBoundaryBox(false);
 
-    // compute collision detection algorithm
-    // create collision detector
-    double toolRadius = 0.01;
-    localObject->createAABBCollisionDetector(toolRadius);
+        // compute collision detection algorithm
+        // create collision detector
+        double toolRadius = 0.01;
+
+        localObject->createAABBCollisionDetector(toolRadius);
 
 
-    // define a default stiffness for the object
-    localObject->setStiffness(stiffness * maxStiffness, true);
+        // define a default stiffness for the object
+        localObject->setStiffness(stiffness * maxStiffness, true);
 
-    // define some haptic friction properties
-    localObject->setFriction(friction, friction+0.1, true);
+        // define some haptic friction properties
+        localObject->setFriction(friction, friction+0.1, true);
+
+
+    }
+
 
     // enable display list for faster graphic rendering
     localObject->setUseDisplayList(true);
-
-    // center object in scene
-    localObject->setLocalPos(cVector3d(0.0,-0.2,0.0));
-
-    // rotate object in scene
-    //localObject->rotateExtrinsicEulerAnglesDeg(0, 0, 90, C_EULER_ORDER_XYZ);
-
 
     // compute all edges of object for which adjacent triangles have more than 40 degree angle
     localObject->computeAllEdges(0);
@@ -851,6 +874,14 @@ cMultiMesh* initializeObj(cMultiMesh* localObject,double stiffness, double frict
     localObject->setShowTriangles(showTriangles);
     localObject->setShowEdges(showEdges);
     localObject->setShowNormals(showNormals);
+
+    // center object in scene
+    localObject->setLocalPos(cVector3d(0.0,-0.2,0.0));
+
+    // rotate object in scene
+    //localObject->rotateExtrinsicEulerAnglesDeg(0, 0, 90, C_EULER_ORDER_XYZ);
+
+
 
     return localObject;
 }
@@ -1013,10 +1044,10 @@ void updateHaptics(void)
             // assign new local transformation to object
             selectedObject->setLocalTransform(parent_T_object);
 
+            Animal ani=myAnimals[assignmentId];
 
-
-            myAnimals[assignmentId].setMovement();
-            cVector3d forces=myAnimals[assignmentId].movement+myAnimals[assignmentId].gravity;
+            ani.setMovement();//initialize with haptic
+            cVector3d forces=ani.movement+ani.gravity;
             tool->setDeviceGlobalForce(forces);
 
 
